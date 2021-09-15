@@ -39,6 +39,78 @@ public class Application {
     public Arena arena;
   }
 
+  class Vector2 {
+    public Vector2(int x, int y) {
+      this.x = x;
+      this.y = y;
+    }
+
+    public int x;
+    public int y;
+  }
+
+  class Direction {
+
+    public String direction;
+
+    Direction(String direction) {
+      this.direction = direction;
+    }
+
+    public String forward() {
+      return this.direction;
+    }
+
+    public String left() {
+      String result = null;
+
+      switch (this.direction) {
+        case "N":
+        result = "W";
+        break;
+      case "W":
+        result = "S";
+        break;
+      case "E":
+        result = "N";
+        break;
+      case "S":
+        result = "E";
+        break;
+      default:
+      }      
+
+      return result;
+    }
+
+    public String right() {
+      String result = null;
+
+      switch (this.direction) {
+        case "N":
+        result = "E";
+        break;
+      case "W":
+        result = "N";
+        break;
+      case "E":
+        result = "S";
+        break;
+      case "S":
+        result = "W";
+        break;
+      default:
+      }      
+
+      return result;
+    }
+
+  }
+
+  Vector2 arenaDim = null;
+  String[][] arenaMap = null;
+  boolean debug = true;
+
   public static void main(String[] args) {
     SpringApplication.run(Application.class, args);
   }
@@ -55,20 +127,16 @@ public class Application {
 
   @PostMapping("/**")
   public String index(@RequestBody ArenaUpdate arenaUpdate) {
-    // System.out.println(arenaUpdate.toString());
-
+ 
     String myURL = arenaUpdate._links.self.href;
-    System.out.println("---\nMy URL : " + myURL);
+    if (debug) { System.out.println("---\nMy URL : " + myURL); }
 
     Integer[] dims = arenaUpdate.arena.dims.toArray(new Integer[2]);
-    int dimX = dims[0];
-    int dimY = dims[1];
+    arenaDim = new Vector2(dims[0], dims[1]);
   
-    String[][] arenaMap = new String[dimX][dimY];
+    arenaMap = new String[arenaDim.x][arenaDim.y];
 
-    int myX = 0;
-    int myY = 0;
-    String myDirection = "";
+    PlayerState me = null;
 
     // Build map
     int playerCount = 0;
@@ -76,73 +144,98 @@ public class Application {
       String url = state.getKey();
       boolean isMe = url.equals(myURL);
       PlayerState playerState = state.getValue();
-      System.out.println("Player " + playerCount + " (me " + isMe + ") URL " + url + " pos" + playerState.x + "," + playerState.y);
+      if (debug) { System.out.println("Player " + playerCount + " (me " + isMe + ") URL " + url + " pos" + playerState.x + "," + playerState.y); }
 
       arenaMap[playerState.x][playerState.y] = url;
 
       if (isMe) {
-        myX = playerState.x;
-        myY = playerState.y;
-        myDirection = playerState.direction;
+        me = playerState;
       }
 
       playerCount++;
     }
 
-    String command = null;
-
-    command = checkDirection(myDirection, arenaMap, 1, dimX, dimY, myX, myY);
-    if (command == null) {
-      command = checkDirection(myDirection, arenaMap, 2, dimX, dimY, myX, myY);      
-    }
-    if (command == null) {
-      command = checkDirection(myDirection, arenaMap, 3, dimX, dimY, myX, myY);      
+    if (me == null) {
+      System.out.println("My URL not found in player list " + myURL);
+      return "T";
     }
 
-    if (command == null) {
+    if (me.wasHit) {
+      // Evasive action
       String[] commands = new String[]{"F", "R", "L"};
       int i = new Random().nextInt(3);
-      command = commands[i];
+      return commands[i];
     }
-    System.out.println(command);
+
+    String command = null;
+    Vector2 targetLocation = null;
+
+    targetLocation = detect(me, me.direction); // forward
+    if (targetLocation != null) {
+      command = "T";
+    } else {
+      targetLocation = detect(me, new Direction(me.direction).left());
+      if (targetLocation != null) {
+        command = "L";
+      } else {
+        targetLocation = detect(me, new Direction(me.direction).right());
+        if (targetLocation != null) {
+          command = "R";
+        } else {
+          String[] commands = new String[]{"F", "R", "L"};
+          int i = new Random().nextInt(3);
+          command = commands[i];
+        }
+      }
+
+    }
+
+    if (debug) { System.out.println(command); }
 
     return command;
   }
 
-  private String checkDirection(String direction, String[][] arenaMap, int distance, int dimX, int dimY, int myX, int myY) {
-    String result = null;
+  private Vector2 detect(PlayerState me, String direction) {
+    Vector2 result = null;
 
-    int targetX = 0;
-    int targetY = 0;
+    Vector2[] targets = null;
 
     // Is someone in front of me?
     switch (direction) {
       case "N":
-        targetX = myX;
-        targetY = myY - distance;
+        targets = new Vector2[] { new Vector2(me.x, me.y - 1), 
+                                  new Vector2(me.x, me.y - 2),
+                                  new Vector2(me.x, me.y - 3) };
         break;
       case "W":
-        targetX = myX - distance;
-        targetY = myY;
+        targets = new Vector2[] { new Vector2(me.x - 1, me.y), 
+                                  new Vector2(me.x - 2, me.y),
+                                  new Vector2(me.x - 3, me.y) };
         break;
       case "E":
-        targetX = myX + distance;
-        targetY = myY;
+        targets = new Vector2[] { new Vector2(me.x + 1, me.y), 
+                                  new Vector2(me.x + 2, me.y),
+                                  new Vector2(me.x + 3, me.y) };
         break;
       case "S":
-        targetX = myX;
-        targetY = myY + distance;
+        targets = new Vector2[] { new Vector2(me.x, me.y + 1), 
+                                  new Vector2(me.x, me.y + 2), 
+                                  new Vector2(me.x, me.y + 3) };
         break;
       default:
     }
-    System.out.println("Target " + targetX + "," + targetY);
+
+    String target = null;
 
     // target position in bounds?
-    if (targetX >= 0 && targetY >= 0 && targetX < dimX && targetY < dimY ) {
-      String target = arenaMap[targetX][targetY];
-      if (target != null) {
-        System.out.println("Target acquired: " + target);
-        result = "T";
+    for (Vector2 v : targets) {
+      if (v.x >= 0 && v.y >= 0 && v.x < arenaDim.x && v.y < arenaDim.y ) {
+        target = arenaMap[v.x][v.y];
+        if (target != null) {
+          if (debug) { System.out.println("Target acquired: " + target); }
+          result = v;
+          break;
+        }
       }
     }
 
