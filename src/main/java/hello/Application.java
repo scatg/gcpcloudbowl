@@ -162,9 +162,15 @@ public class Application {
 
     if (me.wasHit) {
       // Evasive action
-      String[] commands = new String[]{"F", "R", "L"};
-      int i = new Random().nextInt(3);
-      return commands[i];
+
+      // Clear path ahead?
+      if (detect(me, me.direction) == null) {
+        return "F";
+      } else {
+        String[] commands = new String[]{"R", "L"};
+        int i = new Random().nextInt(2);
+        return commands[i];
+      }
     }
 
     String command = null;
