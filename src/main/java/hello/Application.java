@@ -109,7 +109,7 @@ public class Application {
 
   Vector2 arenaDim = null;
   String[][] arenaMap = null;
-  boolean debug = true;
+  boolean debug = false;
 
   public static void main(String[] args) {
     SpringApplication.run(Application.class, args);
