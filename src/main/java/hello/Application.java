@@ -164,10 +164,12 @@ public class Application {
       // Evasive action
 
       // Clear path ahead?
-      if (detect(me, me.direction) == null) {
+      if (evade(me, me.direction)) {
         return "F";
+      } else if (evade(me, new Direction(me.direction).right())) {
+        return "R";
       } else {
-        String[] commands = new String[]{"R", "L"};
+        String[] commands = new String[]{"T", "L"};
         int i = new Random().nextInt(2);
         return commands[i];
       }
@@ -242,6 +244,53 @@ public class Application {
           result = v;
           break;
         }
+      }
+    }
+
+    return result;
+  }
+
+
+
+  private boolean evade(PlayerState me, String direction) {
+    boolean result = true; // ok to go that way
+
+    Vector2[] targets = null;
+
+    // Is someone in front of me?
+    switch (direction) {
+      case "N":
+        targets = new Vector2[] { new Vector2(me.x, me.y - 1), 
+                                  new Vector2(me.x, me.y - 2) };
+        break;
+      case "W":
+        targets = new Vector2[] { new Vector2(me.x - 1, me.y), 
+                                  new Vector2(me.x - 2, me.y) };
+        break;
+      case "E":
+        targets = new Vector2[] { new Vector2(me.x + 1, me.y), 
+                                  new Vector2(me.x + 2, me.y) };
+        break;
+      case "S":
+        targets = new Vector2[] { new Vector2(me.x, me.y + 1), 
+                                  new Vector2(me.x, me.y + 2) };
+        break;
+      default:
+    }
+
+    String target = null;
+
+    // target position in bounds?
+    for (Vector2 v : targets) {
+      if (v.x >= 0 && v.y >= 0 && v.x < arenaDim.x && v.y < arenaDim.y ) {
+        target = arenaMap[v.x][v.y];
+        if (target != null) {
+          if (debug) { System.out.println("Target acquired: " + target); }
+          result = false;
+          break;
+        }
+      } else {
+        result = false;
       }
     }
 
