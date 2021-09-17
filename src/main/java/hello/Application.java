@@ -191,7 +191,7 @@ public class Application {
           command = "R";
         } else {
           // Nothing detected, free move
-          if (evade(me, me.direction) {
+          if (evade(me, me.direction)) {
             command = "F";
           } else if (evade(me, new Direction(me.direction).left())) {
             command = "L";
