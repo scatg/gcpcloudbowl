@@ -190,9 +190,17 @@ public class Application {
         if (targetLocation != null) {
           command = "R";
         } else {
-          String[] commands = new String[]{"F", "R", "L"};
-          int i = new Random().nextInt(3);
-          command = commands[i];
+          // Nothing detected, free move
+          if (evade(me, me.direction) {
+            command = "F";
+          } else if (evade(me, new Direction(me.direction).left())) {
+            command = "L";
+          } else {
+            command = "R";
+          }
+          // String[] commands = new String[]{"F", "R", "L"};
+          // int i = new Random().nextInt(3);
+          // command = commands[i];
         }
       }
 
